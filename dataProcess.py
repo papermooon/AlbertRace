@@ -37,7 +37,7 @@ class RaceDataset(Dataset):
 def collate_fn(batch_data):  # 问题对在前，文章内容在后，输出的size是(batch, n_choices, max_len)
     input_ids, attention_mask, token_type_ids, label = [], [], [], []
     for x in batch_data:
-        text = tokenizer(x[1], x[0], padding='max_length', truncation=True,
+        text = tokenizer(x[0], x[1], padding='max_length', truncation=True,
                          max_length=512, return_tensors='pt')
         input_ids.append(text['input_ids'].tolist())
         attention_mask.append(text['attention_mask'].tolist())

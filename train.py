@@ -3,6 +3,7 @@ from tqdm import tqdm
 from transformers import AlbertForMultipleChoice
 from pathlib import Path
 from torch.utils.data import DataLoader
+from datetime import datetime
 import dataProcess
 
 # 超参数
@@ -47,12 +48,18 @@ for epoch in range(epochs):
     tk = tqdm(enumerate(train_dataloader), total=len(train_dataloader), position=0, leave=True)
     for idx, batch_data in tk:
         optimizer.zero_grad()
+
         input_ids, attention_mask, token_type_ids, label = batch_data[0], batch_data[1], batch_data[2], batch_data[3]
         input_ids = input_ids.to(device)
         attention_mask = attention_mask.to(device)
         labels = labels.to(device)
+
         outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
         loss = outputs.loss
+
+    now_time = datetime.now().strftime('%m-%d_%H-%M')
+    save_name = "epoch_" + str(epoch) + "_" + now_time + ".pt"
+    torch.save(model, model_dir / save_name)
 
 
 def train():
