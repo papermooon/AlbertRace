@@ -7,6 +7,7 @@ from torch.utils.data import Dataset, DataLoader, TensorDataset
 # data.save_to_disk(data_path)
 
 data = load_dataset('race', 'all')
+# print(data['test'])
 tokenizer = AlbertTokenizer.from_pretrained('albert-base-v2')
 # model = AlbertForMultipleChoice.from_pretrained('albert-base-v2')
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
