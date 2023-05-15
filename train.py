@@ -5,6 +5,7 @@ from pathlib import Path
 from torch.utils.data import DataLoader
 from datetime import datetime
 import dataProcess
+from torch.utils.tensorboard import SummaryWriter
 
 # 超参数
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -14,7 +15,7 @@ batch_size = 128
 epochs = 20
 
 
-# loss的进度条
+# loss的进度条,暂时弃用
 class LossMetric:
     def __init__(self):
         self.val = 0
@@ -38,9 +39,11 @@ else:
 model.to(device)
 
 loss = LossMetric()
+writer = SummaryWriter(log_dir='./logs')
 train_dataset = dataProcess.data['test']
 train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=dataProcess.collate_fn())
 optimizer = torch.optim.Adam(model.parameters(), lr=3e-4)
+current_step = 0
 
 # 开始训练
 model.train()
@@ -57,39 +60,21 @@ for epoch in range(epochs):
         outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
         loss = outputs.loss
 
+        loss.backward()
+        optimizer.step()
+
+        writer.add_scalar(tag="batch_loss",  # 可以理解为图像的名字
+                          scalar_value=loss.item(),  # 纵坐标的值
+                          global_step=current_step  # 当前是第几次迭代，可以理解为横坐标的值
+                          )
+        current_step = current_step + 1
+
+        tk.set_description("Epoch {}/{}".format(epoch + 1, epochs))
+        tk.set_postfix(loss=loss.item())
+
     now_time = datetime.now().strftime('%m-%d_%H-%M')
     save_name = "epoch_" + str(epoch) + "_" + now_time + ".pt"
     torch.save(model, model_dir / save_name)
 
 
-def train():
-    model.train()
-    total_train_loss = 0
-    iter_num = 0
-    total_iter = len(train_loader)
-    for idx, (input_ids, attention_mask, token_type_ids, labels) in enumerate(train_loader):
-        optim.zero_grad()
 
-        input_ids = input_ids.to(device)
-        attention_mask = attention_mask.to(device)
-        labels = labels.to(device)
-        outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
-
-        loss = outputs.loss
-
-        if idx % 20 == 0:
-            with torch.no_grad():
-                print((outputs[1].argmax(1).data == labels.data).float().mean().item(), loss.item())
-
-        total_train_loss += loss.item()
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-        optim.step()
-        scheduler.step()
-
-        iter_num += 1
-        if (iter_num % 100 == 0):
-            print("epoth: %d, iter_num: %d, loss: %.4f, %.2f%%" % (
-                epoch, iter_num, loss.item(), iter_num / total_iter * 100))
-
-    print("Epoch: %d, Average training loss: %.4f" % (epoch, total_train_loss / len(train_loader)))
