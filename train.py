@@ -6,12 +6,14 @@ from torch.utils.data import DataLoader
 from datetime import datetime
 import dataProcess
 from torch.utils.tensorboard import SummaryWriter
+from transformers import logging
+logging.set_verbosity_error()
 
 # 超参数
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_dir = Path("./model")
 checkpoint = None
-batch_size = 64
+batch_size = 4
 epochs = 20
 
 
