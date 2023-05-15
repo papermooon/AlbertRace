@@ -11,7 +11,7 @@ from torch.utils.tensorboard import SummaryWriter
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_dir = Path("./model")
 checkpoint = None
-batch_size = 128
+batch_size = 64
 epochs = 20
 
 
@@ -40,8 +40,8 @@ model.to(device)
 
 loss = LossMetric()
 writer = SummaryWriter(log_dir='./logs')
-train_dataset = dataProcess.data['test']
-train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=dataProcess.collate_fn())
+train_dataset = dataProcess.RaceDataset(dataProcess.data['test'])
+train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=dataProcess.collate_fn)
 optimizer = torch.optim.Adam(model.parameters(), lr=3e-4)
 current_step = 0
 
@@ -52,7 +52,7 @@ for epoch in range(epochs):
     for idx, batch_data in tk:
         optimizer.zero_grad()
 
-        input_ids, attention_mask, token_type_ids, label = batch_data[0], batch_data[1], batch_data[2], batch_data[3]
+        input_ids, attention_mask, token_type_ids, labels = batch_data[0], batch_data[1], batch_data[2], batch_data[3]
         input_ids = input_ids.to(device)
         attention_mask = attention_mask.to(device)
         labels = labels.to(device)
