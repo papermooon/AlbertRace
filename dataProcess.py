@@ -7,7 +7,7 @@ from torch.utils.data import Dataset, DataLoader, TensorDataset
 # data.save_to_disk(data_path)
 
 data = load_dataset('race', 'all')
-tokenizer = AlbertTokenizer.from_pretrained('albert-base-v2')
+tokenizer = AlbertTokenizer.from_pretrained('albert-xxlarge-v2')
 
 
 # 定义数据集

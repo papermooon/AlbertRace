@@ -14,7 +14,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_dir = Path("./model")
 checkpoint = None
 batch_size = 4
-epochs = 20
+epochs = 10
 
 
 # loss的进度条,暂时弃用
@@ -37,12 +37,12 @@ if checkpoint is not None:
     model = torch.load(model_dir / checkpoint)
     print("加载模型:", checkpoint)
 else:
-    model = AlbertForMultipleChoice.from_pretrained('albert-base-v2')
+    model = AlbertForMultipleChoice.from_pretrained('albert-xxlarge-v2')
 model.to(device)
 
 loss = LossMetric()
 writer = SummaryWriter(log_dir='./logs')
-train_dataset = dataProcess.RaceDataset(dataProcess.data['test'])
+train_dataset = dataProcess.RaceDataset(dataProcess.data['train'])
 train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=dataProcess.collate_fn)
 optimizer = torch.optim.Adam(model.parameters(), lr=3e-4)
 current_step = 0
