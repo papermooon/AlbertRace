@@ -13,8 +13,8 @@ logging.set_verbosity_error()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_dir = Path("./model")
 checkpoint = None
-batch_size = 4
-epochs = 10
+batch_size = 2
+epochs = 5
 
 
 # loss的进度条,暂时弃用
@@ -43,7 +43,7 @@ model.to(device)
 loss = LossMetric()
 writer = SummaryWriter(log_dir='./logs')
 train_dataset = dataProcess.RaceDataset(dataProcess.data['train'])
-train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=dataProcess.collate_fn)
+train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=dataProcess.collate_fn,num_workers=8)
 optimizer = torch.optim.Adam(model.parameters(), lr=3e-4)
 current_step = 0
 

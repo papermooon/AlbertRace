@@ -25,7 +25,7 @@ class RaceDataset(Dataset):
         content = self.data[idx]['article']
         choice = self.data[idx]['options']
         content = [content for i in range(len(choice))]
-        pair = [question + ' ' + i for i in choice]
+        pair = [question + i for i in choice]
 
         return content, pair, label
 
@@ -33,8 +33,8 @@ class RaceDataset(Dataset):
 def collate_fn(batch_data):  # 问题对在前，文章内容在后，输出的size是(batch, n_choices, max_len)
     input_ids, attention_mask, token_type_ids, label = [], [], [], []
     for x in batch_data:
-        text = tokenizer(x[0], x[1], padding='max_length', truncation=True,
-                         max_length=512, return_tensors='pt')
+        text = tokenizer(x[0],x[1],padding='max_length', truncation='longest_first',
+                         max_length=256, return_tensors='pt')
         input_ids.append(text['input_ids'].tolist())
         attention_mask.append(text['attention_mask'].tolist())
         token_type_ids.append(text['token_type_ids'].tolist())
@@ -47,8 +47,18 @@ def collate_fn(batch_data):  # 问题对在前，文章内容在后，输出的s
     label = torch.tensor(label)
     return input_ids, attention_mask, token_type_ids, label
 
-# res = collate_fn(tds)
-# print(res[3])
-# print(res[0].shape)
-# print(res[1].shape)
-# print(res[2].shape)
+tds = RaceDataset(data['train'])[2]
+print(tds)
+res = collate_fn([tds])
+print(res[3])
+print(res[0].shape)
+print(res[1].shape)
+print(res[2].shape)
+decode1=tokenizer.decode(res[0][0][0])
+decode2=tokenizer.decode(res[0][0][1])
+decode3=tokenizer.decode(res[0][0][2])
+decode4=tokenizer.decode(res[0][0][3])
+print(decode1)
+print(decode2)
+print(decode3)
+print(decode4)
