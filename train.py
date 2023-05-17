@@ -13,7 +13,7 @@ logging.set_verbosity_error()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_dir = Path("./model")
 checkpoint = None
-batch_size = 2
+batch_size = 32
 epochs = 5
 
 
@@ -37,14 +37,14 @@ if checkpoint is not None:
     model = torch.load(model_dir / checkpoint)
     print("加载模型:", checkpoint)
 else:
-    model = AlbertForMultipleChoice.from_pretrained('albert-xxlarge-v2')
+    model = AlbertForMultipleChoice.from_pretrained('albert-xlarge-v2')
 model.to(device)
 
 loss = LossMetric()
 writer = SummaryWriter(log_dir='./logs')
 train_dataset = dataProcess.RaceDataset(dataProcess.data['train'])
 train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=dataProcess.collate_fn,num_workers=8)
-optimizer = torch.optim.Adam(model.parameters(), lr=3e-4)
+optimizer = torch.optim.Adam(model.parameters(), lr=2e-5)
 current_step = 0
 
 # 开始训练
