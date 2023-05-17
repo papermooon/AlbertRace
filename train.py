@@ -7,13 +7,14 @@ from datetime import datetime
 import dataProcess
 from torch.utils.tensorboard import SummaryWriter
 from transformers import logging
+
 logging.set_verbosity_error()
 
 # 超参数
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_dir = Path("./model")
-checkpoint = None
-batch_size = 32
+checkpoint = "epoch_0_05-17_15-04.pt"
+batch_size = 12
 epochs = 5
 
 
@@ -37,19 +38,23 @@ if checkpoint is not None:
     model = torch.load(model_dir / checkpoint)
     print("加载模型:", checkpoint)
 else:
-    model = AlbertForMultipleChoice.from_pretrained('albert-xlarge-v2')
+    model = AlbertForMultipleChoice.from_pretrained('albert-large-v2')
 model.to(device)
 
-loss = LossMetric()
-writer = SummaryWriter(log_dir='./logs')
+# loss = LossMetric()
+# writer = SummaryWriter(log_dir='./logs')
+writer = SummaryWriter(log_dir='/root/tf-logs')
 train_dataset = dataProcess.RaceDataset(dataProcess.data['train'])
-train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=dataProcess.collate_fn,num_workers=8)
-optimizer = torch.optim.Adam(model.parameters(), lr=2e-5)
+train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=dataProcess.collate_fn,
+                              num_workers=8)
+optimizer = torch.optim.Adam(model.parameters(), lr=5e-5)
 current_step = 0
 
 # 开始训练
 model.train()
 for epoch in range(epochs):
+    epoch_ct = 0
+    current_loss = 0
     tk = tqdm(enumerate(train_dataloader), total=len(train_dataloader), position=0, leave=True)
     for idx, batch_data in tk:
         optimizer.zero_grad()
@@ -70,13 +75,14 @@ for epoch in range(epochs):
                           global_step=current_step  # 当前是第几次迭代，可以理解为横坐标的值
                           )
         current_step = current_step + 1
+        epoch_ct = epoch_ct + 1
+
+        current_loss = current_loss + loss.item()
+        avg_loss = current_loss / epoch_ct
 
         tk.set_description("Epoch {}/{}".format(epoch + 1, epochs))
-        tk.set_postfix(loss=loss.item())
+        tk.set_postfix(loss=loss.item(), loss_avg=avg_loss)
 
     now_time = datetime.now().strftime('%m-%d_%H-%M')
     save_name = "epoch_" + str(epoch) + "_" + now_time + ".pt"
     torch.save(model, model_dir / save_name)
-
-
-

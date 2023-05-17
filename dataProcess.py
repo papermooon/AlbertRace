@@ -8,7 +8,7 @@ data_path = './racedata'
 
 data = load_dataset('race', 'all')
 # data = load_dataset(path=data_path)
-tokenizer = AlbertTokenizer.from_pretrained('albert-xlarge-v2')
+tokenizer = AlbertTokenizer.from_pretrained('albert-large-v2')
 
 
 # 定义数据集
