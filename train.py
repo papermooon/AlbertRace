@@ -7,13 +7,14 @@ from datetime import datetime
 import dataProcess
 from torch.utils.tensorboard import SummaryWriter
 from transformers import logging
+from transformers import get_linear_schedule_with_warmup
 
 logging.set_verbosity_error()
 
 # 超参数
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_dir = Path("./model")
-checkpoint = "epoch_0_05-17_15-04.pt"
+checkpoint = None
 batch_size = 12
 epochs = 5
 
@@ -47,7 +48,12 @@ writer = SummaryWriter(log_dir='/root/tf-logs')
 train_dataset = dataProcess.RaceDataset(dataProcess.data['train'])
 train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=dataProcess.collate_fn,
                               num_workers=8)
-optimizer = torch.optim.Adam(model.parameters(), lr=5e-5)
+# optimizer = torch.optim.Adam(model.parameters(), lr=5e-5)
+
+optimizer = torch.optim.AdamW(model.parameters(), lr=1e-5, eps=1e-8)
+scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0,
+                                            num_training_steps=len(train_dataloader) * epochs)
+
 current_step = 0
 
 # 开始训练
@@ -69,6 +75,7 @@ for epoch in range(epochs):
 
         loss.backward()
         optimizer.step()
+        scheduler.step()
 
         writer.add_scalar(tag="batch_loss",  # 可以理解为图像的名字
                           scalar_value=loss.item(),  # 纵坐标的值
