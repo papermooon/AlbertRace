@@ -12,18 +12,11 @@ logging.set_verbosity_error()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_dir = Path("./model")
-# checkpoint = "epoch_2_05-15_23-30.pt"
-checkpoint = "epoch_0_05-17_02-42.pt"
-
-model = torch.load(model_dir / checkpoint)
-print("加载模型:", checkpoint)
-model.to(device)
-model.eval()
 
 
-def sample(Content, Question, Options, Answer):
+def sample(Content, Question, Options, Answer, model):
     input_ids = []
-    # attention_mask = []
+
     label = ord(Answer) - 65
     content = [Content for i in range(len(Options))]
     pair = [Question + i for i in Options]
@@ -32,23 +25,31 @@ def sample(Content, Question, Options, Answer):
 
     input_ids.append(encoding['input_ids'].tolist())
     input_ids = torch.tensor(input_ids).to(device)
-    print(input_ids.shape)
-    # attention_mask.append(encoding['attention_mask'].tolist())
-    # attention_mask = torch.tensor(attention_mask).to(device)
+
     outputs = model(input_ids)
-    print(outputs)
+
     result = torch.argmax(outputs.logits).detach().cpu().numpy()
-    print("模型答案：", result)
-    print("标准答案：", label)
+    # print("模型答案：", result)
+    # print("标准答案：", label)
     return result == label
 
 
-train_dataset = dataProcess.data['test']
-ct = 0
-for i in range(500):
-    samData = train_dataset[i]
-    # print(samData)
-    res = sample(samData['article'], samData['question'], samData['options'], samData['answer'])
-    if res:
-        ct += 1
-print(ct / 500)
+test_dataset = dataProcess.data['test']
+# test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False, collate_fn=dataProcess.collate_fn)
+
+
+def model_eval(checkpoint_name):
+    correct = 0
+    model = torch.load(model_dir / checkpoint_name)
+    print("加载模型:", checkpoint_name)
+    model.to(device)
+    model.eval()
+    tk = tqdm(enumerate(test_dataset), total=len(test_dataset), position=0, leave=True)
+    for idx, samData in tk:
+        res = sample(samData['article'], samData['question'], samData['options'], samData['answer'], model)
+        if res:
+            correct += 1
+    return correct / len(test_dataset)
+
+
+print(model_eval('epoch_4_05-18_05-27.pt'))
