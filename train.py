@@ -14,8 +14,9 @@ logging.set_verbosity_error()
 # 超参数
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_dir = Path("./model")
-checkpoint = None
-batch_size = 12
+checkpoint = 'epoch_4_05-19_09-57.pt'
+# checkpoint = None
+batch_size = 14
 epochs = 5
 
 
@@ -50,12 +51,13 @@ train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True
                               num_workers=8)
 # optimizer = torch.optim.Adam(model.parameters(), lr=5e-5)
 
-optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5, eps=1e-8)
+optimizer = torch.optim.AdamW(model.parameters(), lr=1e-5, eps=1e-8)
 scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0,
                                             num_training_steps=len(train_dataloader) * epochs)
 
 current_step = 0
-
+# 梯度累积
+gradient_accumulation_steps = 4
 # 开始训练
 model.train()
 for epoch in range(epochs):
@@ -63,32 +65,41 @@ for epoch in range(epochs):
     current_loss = 0
     tk = tqdm(enumerate(train_dataloader), total=len(train_dataloader), position=0, leave=True)
     for idx, batch_data in tk:
-        optimizer.zero_grad()
+        # optimizer.zero_grad()
 
         input_ids, attention_mask, token_type_ids, labels = batch_data[0], batch_data[1], batch_data[2], batch_data[3]
         input_ids = input_ids.to(device)
         attention_mask = attention_mask.to(device)
         labels = labels.to(device)
+        token_type_ids = token_type_ids.to(device)
 
-        outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
+        outputs = model(input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids, labels=labels)
         loss = outputs.loss
 
-        loss.backward()
-        optimizer.step()
-        scheduler.step()
+        current_loss = current_loss + loss.item()
 
-        writer.add_scalar(tag="batch_loss",  # 可以理解为图像的名字
-                          scalar_value=loss.item(),  # 纵坐标的值
+        loss = loss / gradient_accumulation_steps
+        loss.backward()
+
+        if current_step % gradient_accumulation_steps == 0:
+            optimizer.step()
+            optimizer.zero_grad()
+            scheduler.step()
+
+        # optimizer.step()
+        # scheduler.step()
+
+        writer.add_scalar(tag="batch_loss_large",  # 可以理解为图像的名字
+                          scalar_value=loss.item()*gradient_accumulation_steps,  # 纵坐标的值
                           global_step=current_step  # 当前是第几次迭代，可以理解为横坐标的值
                           )
         current_step = current_step + 1
         epoch_ct = epoch_ct + 1
 
-        current_loss = current_loss + loss.item()
         avg_loss = current_loss / epoch_ct
 
         tk.set_description("Epoch {}/{}".format(epoch + 1, epochs))
-        tk.set_postfix(loss=loss.item(), loss_avg=avg_loss)
+        tk.set_postfix(loss=loss.item()*gradient_accumulation_steps, loss_avg=avg_loss)
 
     now_time = datetime.now().strftime('%m-%d_%H-%M')
     save_name = "epoch_" + str(epoch) + "_" + now_time + ".pt"
