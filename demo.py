@@ -36,7 +36,7 @@ def sample(Content, Question, Options, Answer, model):
     result = torch.argmax(outputs.logits).detach().cpu().numpy()
     # print("模型答案：", result)
     # print("标准答案：", label)
-    return result == label
+    return result == label, result, label
 
 
 test_dataset = dataProcess.data['test']
@@ -72,3 +72,21 @@ def model_eval(checkpoint_name):
 # print(model_eval('epoch_2_05-19_05-40.pt')) 60.6
 # print(model_eval('epoch_3_05-19_07-49.pt')) 62.0
 # print(model_eval('epoch_4_05-19_09-57.pt')) 62.5
+
+def demonstrate(number=0):
+    model = torch.load(model_dir / 'epoch_4_05-19_09-57.pt')
+    model.eval()
+    samData = test_dataset[number]
+    chose = ['A', 'B', 'C', 'D']
+    print("文本：" + samData['article'])
+    print("问题：" + samData['question'])
+    print("选项A：" + samData['options'][0])
+    print("选项B：" + samData['options'][1])
+    print("选项C：" + samData['options'][2])
+    print("选项D：" + samData['options'][3])
+    res_bool, res, label = sample(samData['article'], samData['question'], samData['options'], samData['answer'], model)
+    print("模型选择：" + chose[res])
+    print("正确答案：" + chose[label])
+
+
+demonstrate(9)
